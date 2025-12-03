@@ -2,17 +2,26 @@
 
 ## Quick Start
 
-### 1. Install Dependencies
+### 1. Create Conda Environment (Python 3.11)
+
+LightFM requires Python 3.11 or earlier. Create a dedicated environment:
+
+```bash
+conda create -n recommender python=3.11
+conda activate recommender
+```
+
+### 2. Install Dependencies
 
 ```bash
 cd /home/vlad/Work/fj-recommendations/Mydata
 pip install -r requirements.txt
+conda install -c conda-forge lightfm
 ```
 
-### 2. Start Jupyter in Browser
+### 3. Start Jupyter in Browser
 
 ```bash
-cd /home/vlad/Work/fj-recommendations/Mydata
 jupyter notebook
 ```
 
@@ -20,14 +29,13 @@ This opens your browser at `http://localhost:8888`. Click on `influencer_recomme
 
 **Alternative - JupyterLab (modern interface):**
 ```bash
-pip install jupyterlab
 jupyter lab
 ```
 
-### 3. Run the Notebook
+### 4. Run the Notebook
 
 - Click **Cell > Run All** (or press `Shift+Enter` cell by cell)
-- Wait for all cells to execute (~1-2 minutes)
+- Wait for all cells to execute (~2-3 minutes)
 
 ---
 
@@ -36,9 +44,13 @@ jupyter lab
 After running all cells, use the main function:
 
 ```python
-# Get top 100 recommendations for a campaign
-recs = recommend_influencers(campaign_id=2993, top_n=100)
-print(recs)
+# Ensemble method (recommended) - combines all signals
+recs = recommend_influencers_v3(campaign_id=2993, top_n=100, method='ensemble')
+
+# Other methods available:
+recs = recommend_influencers_v3(campaign_id=2993, top_n=100, method='history')       # Past acceptance only
+recs = recommend_influencers_v3(campaign_id=2993, top_n=100, method='collaborative') # Similar campaigns
+recs = recommend_influencers_v3(campaign_id=2993, top_n=100, method='lightfm')       # Matrix factorization
 ```
 
 ### Parameters
@@ -47,6 +59,7 @@ print(recs)
 |-----------|-------------|
 | `campaign_id` | Campaign ID from your database |
 | `top_n` | Number of recommendations (default: 100) |
+| `method` | `'ensemble'`, `'history'`, `'collaborative'`, or `'lightfm'` |
 
 ### Output Columns
 
@@ -58,8 +71,10 @@ print(recs)
 | `followers` | Follower count |
 | `engagement` | Engagement rate |
 | `past_acceptances` | Times accepted in past campaigns |
-| `historical_rate` | Historical acceptance rate |
-| `recommendation_score` | Ranking score (higher = better) |
+| `history_score` | Score from past acceptance history |
+| `collab_score` | Score from similar campaigns |
+| `lightfm_score` | Score from matrix factorization model |
+| `final_score` | Combined ranking score (higher = better) |
 
 ---
 
@@ -83,20 +98,29 @@ All data is in the `data/` folder:
 
 1. **Group Filters**: Applies campaign targeting (tier, country, location, category, gender, age)
 2. **Network Filter**: Matches influencers to campaign network (Instagram=1, TikTok=8)
-3. **Ranking**: Sorts by recency-weighted past acceptance history
+3. **Scoring**: Combines multiple signals:
+   - **History**: Recency-weighted past acceptance count
+   - **Collaborative**: Acceptance in similar campaigns (by description + targeting)
+   - **LightFM**: Hybrid matrix factorization with influencer features
 
-### Key Insight
+### Recommendation Methods
 
-Past acceptance is the strongest predictor of future acceptance (0.77 correlation). The system prioritizes influencers who have been accepted in recent campaigns.
+| Method | Description | Best For |
+|--------|-------------|----------|
+| `history` | Ranks by past acceptance history | Known high-performers |
+| `collaborative` | Ranks by acceptance in similar campaigns | Discovering new influencers |
+| `lightfm` | Matrix factorization with WARP loss | Cold-start handling |
+| `ensemble` | Combines all signals (40% history, 30% collab, 30% lightfm) | Best overall (recommended) |
 
 ---
 
 ## Performance
 
-Evaluated on 100 newest campaigns:
+Evaluated on 100 newest campaigns (run notebook to see actual results):
 
-| Top N | Recall |
-|-------|--------|
-| 50 | 10.2% |
-| 100 | 17.5% |
-| 200 | 25.9% |
+| Method | Top 50 | Top 100 | Top 200 |
+|--------|--------|---------|---------|
+| History (baseline) | ~10% | ~17% | ~26% |
+| Collaborative | TBD | TBD | TBD |
+| LightFM | TBD | TBD | TBD |
+| Ensemble | TBD | TBD | TBD |

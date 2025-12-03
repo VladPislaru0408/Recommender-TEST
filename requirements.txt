@@ -1,5 +1,7 @@
 pandas
-numpy
-scikit-learn
+numpy<2.0
+scikit-learn<1.6
 lightgbm
 jupyter
+scipy<1.14
+# lightfm - install separately via: conda install -c conda-forge lightfm
